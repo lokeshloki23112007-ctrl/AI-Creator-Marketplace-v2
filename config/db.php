@@ -15,11 +15,17 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'ai_creator_marketplace');
-define('DB_PORT', 3306);
+$db_host = getenv('DB_HOST') ?: '127.0.0.1';
+$db_user = getenv('DB_USER') ?: 'root';
+$db_pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : '';
+$db_name = getenv('DB_NAME') ?: 'ai_creator_marketplace';
+$db_port = getenv('DB_PORT') ?: '3306';
+
+define('DB_HOST', $db_host);
+define('DB_USER', $db_user);
+define('DB_PASS', $db_pass);
+define('DB_NAME', $db_name);
+define('DB_PORT', (int)$db_port);
 
 /**
  * Returns a PDO database connection.
@@ -33,7 +39,7 @@ function get_db(): PDO {
 
     try {
         // Try connecting directly to the target database
-        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+        $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
         $pdo = new PDO($dsn, DB_USER, DB_PASS, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -62,14 +68,14 @@ function get_db(): PDO {
     } catch (PDOException $e) {
         // Database might not exist yet -> connect to server and initialize
         try {
-            $server_dsn = "mysql:host=" . DB_HOST . ";charset=utf8mb4";
+            $server_dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";charset=utf8mb4";
             $server_pdo = new PDO($server_dsn, DB_USER, DB_PASS, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
             ]);
             $server_pdo->exec("CREATE DATABASE IF NOT EXISTS `" . DB_NAME . "` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
 
             // Now connect to the newly created database
-            $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+            $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
             $pdo = new PDO($dsn, DB_USER, DB_PASS, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -85,10 +91,11 @@ function get_db(): PDO {
             }
             return $pdo;
         } catch (PDOException $init_err) {
-            die("<div style='background:#0A0B12;color:#f87171;padding:32px;font-family:\"Times New Roman\",Times,serif;border:1px solid #26243E;border-radius:16px;max-width:600px;margin:40px auto;box-shadow:0 10px 25px rgba(0,0,0,0.5);'>
+            die("<div style='background:#0A0B12;color:#f87171;padding:32px;font-family:system-ui,-apple-system,sans-serif;border:1px solid #26243E;border-radius:16px;max-width:600px;margin:40px auto;box-shadow:0 10px 25px rgba(0,0,0,0.5);'>
                 <h2 style='color:#F1EEFA;margin-top:0;'>Database Connection Error</h2>
-                <p style='color:#C4BCE3;'>Could not connect to MySQL server in XAMPP.</p>
-                <p style='color:#00F5FF;'><b>Please ensure MySQL is running in your XAMPP Control Panel.</b></p>
+                <p style='color:#C4BCE3;'>Could not connect to MySQL server at <code>" . htmlspecialchars(DB_HOST) . ":" . htmlspecialchars((string)DB_PORT) . "</code>.</p>
+                <p style='color:#00F5FF;'><b>If running locally:</b> Please ensure MySQL is running in your XAMPP Control Panel.</p>
+                <p style='color:#00F5FF;'><b>If running on Render:</b> Ensure your database environment variables (<code>DB_HOST</code>, <code>DB_USER</code>, <code>DB_PASS</code>, <code>DB_NAME</code>, <code>DB_PORT</code>) are configured in Render service settings.</p>
                 <p style='color:#A79DCB;font-size:13px;'>Details: " . htmlspecialchars($init_err->getMessage()) . "</p>
             </div>");
         }
