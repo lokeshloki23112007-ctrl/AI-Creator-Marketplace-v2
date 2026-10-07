@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "backend": "py server/run.py",
+    "backend:seed": "py server/seed.py",
+    "backend:test": "py -m pytest server/tests"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
